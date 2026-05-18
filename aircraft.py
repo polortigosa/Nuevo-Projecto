@@ -184,7 +184,7 @@ def PlotFlightsType (aircrafts):
     plt.ylabel("Quantitat")
     return fig
 
-def MapFlights(aircrafts):
+def MapFlights(aircrafts,airports):
     if not aircrafts:
         print("Error: llista buida(Mapflights)")
         messagebox.showwarning("Error", "No hi ha dades per mostrar")
@@ -193,8 +193,6 @@ def MapFlights(aircrafts):
     color_no_schengen = "ff0000ff"  # rojo
 
     #coord de LEBL aeropuerto de llegada
-    airports = LoadAirports("Airports.txt")
-
     destination= Airport( "LEBL",41.29694444444444,  2.0783333333333336)
 
 

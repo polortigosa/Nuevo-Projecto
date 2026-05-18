@@ -32,17 +32,19 @@ def generar_kml():
             os.startfile(filename)  # abre el archivo automáticamente
         except Exception as e:
             messagebox.showerror("Error", f"No s'ha pogut obrir el fitxer: {e}")
-
+    else:
+        messagebox.showwarning("Atenció", "Primer has de carregar el fitxer de aeroports.")
 
 def generar_mapa_vuelos():
     if llista_vuelos:
-        filename = "flights_map.kml"  # assegurar que MapFlights use este nombre o cambiar al que use la función
-        MapFlights(llista_vuelos)
+        filename2 = "flight_map.kml"  # assegurar que MapFlights use este nombre o cambiar al que use la función
+        MapFlights(llista_vuelos, llista_aeroports)
         try:
-            os.startfile(filename)  # abre el archivo automáticamente
-        except Exception as e:
-            messagebox.showwarning("Avís", "Mapa generat, però no s'ha pogut obrir automàticament.")
-
+            os.startfile(filename2)  # abre el archivo automáticamente
+        except Exception as e: #excepto error
+            messagebox.showwarning("Avís", f"Mapa generat, però no s'ha pogut obrir automàticament. {e} ")
+    else:
+        messagebox.showwarning("Atenció", "Primer has de carregar el fitxer de vols i aeroports.")
 
 
 #para Aircraft.py---------------------------------------------------------------------------------------------------
@@ -80,8 +82,8 @@ def PlotArrivals_embedded():
 
 
 def PlotAirlines_embedded():
-    global llista_vuelos
-    if not llista_vuelos:
+    global llista_vuelos, llista_aeroports
+    if not llista_vuelos or not llista_aeroports:
         messagebox.showwarning("Atenció", "Primer has de carregar el fitxer de vols i aeroports.")
         return
 
@@ -181,10 +183,10 @@ window.columnconfigure(1, weight=3)# zona de gráficos
 
 # zona donde esta el grafico (zona lateral)
 
-graph_frame = Frame(window, bg="white", relief="solid", bd=2)#relief soft signnifica q tendra borde delimitado
+graph_frame = Frame(window, bg="white", relief="solid", bd=2)#relief soft significa q tendra borde delimitado
 graph_frame.grid(row=0, column=1, sticky="nsew")
-graph_frame.grid_propagate(False)# evita que se propague todo auqello que usando grid sea mayor
-graph_frame.pack_propagate(False)# evita que se propague todo auqello que usando pack sea mayor
+graph_frame.grid_propagate(False)# evita que se propague todo aquello que usando grid sea mayor
+graph_frame.pack_propagate(False)# evita que se propague todo aquello que usando pack sea mayor
 
 # parte inferior
 bottom_frame = Frame(window)
