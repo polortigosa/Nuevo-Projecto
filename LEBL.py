@@ -1,5 +1,5 @@
-
 from aircraft import *
+import matplotlib.patches as mpatches
 
 class BarcelonaAP:
     def __init__(self, code):
@@ -24,7 +24,7 @@ class Gate:
         self.occupied = False
         self.aircraft_id =""
 
-def SetGates (area, init_gate, end_gate, prefix):
+def SetGates (area, init_gate, end_gate, prefix): #nombre de cada una de las puertas en una lista
     if end_gate <= init_gate:
         return -1
 
@@ -33,10 +33,13 @@ def SetGates (area, init_gate, end_gate, prefix):
     for number in range(init_gate, end_gate + 1): # +1 porque en el range no se tiene en cuenta el ultimio valor
         gate_name = f"{prefix}{number}"# el nombe de cada puerta
         gate = Gate(gate_name)
-        area.gates.append(gate)# mete en una lista, las peurtas que hay metiendo en la lista toda la informacion en la clase
+        area.gates.append(gate)# mete en una lista, las puertas que hay metiendo en la lista toda la informacion en la clase
     return 0
 
-def LoadAirlines (terminal, t_name):
+def LoadAirlines (terminal, t_name):# guarda los icao de esa terminal en una lista en el apartado (la clase)  de termianl
+    #abre el archido de la terminal correspondiente,
+    # mira el  code icao de cada una de las compañias que estan en ese archido y ,por lo tanto, son de en esa terminal
+    #guarda la informacion en una lista que esta en la classe de termianl
     filename = f"{t_name}_Airlines.txt" #para que abra el archivo de la terminal determinada T1 /T2
 
     try:
@@ -46,7 +49,7 @@ def LoadAirlines (terminal, t_name):
 
     airlines_temp = []
 
-    for line in file: #quue ela cada linea del archivo y que elimine espacios y saltos de linea
+    for line in file: #que de cada linea del archivo y que elimine espacios y saltos de linea
         line = line.strip()
         if line == "": #si esta vacia
             continue
@@ -57,7 +60,12 @@ def LoadAirlines (terminal, t_name):
     terminal.airlines = airlines_temp
     return 0
 
-def LoadAirportStructure (filename):
+def LoadAirportStructure (filename):# devuelve Un objeto BarcelonaAP que contiene el código del aeropuerto  (LEBL)
+    # , una lista de terminales, y cada terminal incluye aerolíneas (LoadAirlines) y
+    # áreas de embarque, donde cada área tiene su tipo (Schengen/no Schengen), su rango de puertas y las puertas creadas (SetGates).
+
+    # abre el archivo y mira que informacion del aeropuertos hay
+    # el codigo del aeropuerto, cuantas terminales hay, etc
     try:
         file = open(filename, "r")
     except FileNotFoundError:
@@ -89,14 +97,14 @@ def LoadAirportStructure (filename):
                 boarding_area = BoardingArea(area_name, area_type)#guarda los datos con la clase
                 prefix = f"{terminal_name}{area_name}G"#genera el nombre de la puerta sin tener la posicon en esa terminal
 
-                SetGates(boarding_area, init_gate, end_gate, prefix) #ejecuta la funcion para tener la posicion de la puerta exacta
-                terminal.boarding_areas.append(boarding_area)
+                SetGates(boarding_area, init_gate, end_gate, prefix) #ejecuta la funcion para tener la infromacion completa de cada puerta
+                terminal.boarding_areas.append(boarding_area)#dentro de el objeto terminal, en la lsita de boarding_areas, mete la info
             bcn.terminals.append(terminal)# mete la ppsicon de la terminal dnetro del aeropuerto
         i += 1
     file.close()
     return bcn
 
-def GateOccupancy (bcn):
+def GateOccupancy (bcn):#genera una lista con el lugar exacto d ela puertta, su estado,  y el id si esta ocupado
     occupancy_list = []
     for terminal in bcn.terminals:
         for area in terminal.boarding_areas:
@@ -108,26 +116,26 @@ def GateOccupancy (bcn):
                 occupancy_list.append([gate.name, status, gate.aircraft_id])
     return occupancy_list
 
-def IsAirlineInTerminal (terminal, name):
-    if name == "":
+def IsAirlineInTerminal (terminal, name):#mira si despeus de verificar, si esta la aerolinea en esa terminal
+    if name == "": #  nombre de al aerolinea interesada
         return False
-    if len(terminal.airlines) == 0:
+    if len(terminal.airlines) == 0: # si esta vacio el archivo de informacion de la terminal especifica--> no tiene aerolineas esa terminal
         return False
 
-    return name in terminal.airlines
+    return name in terminal.airlines# si tenemos aerolinea interesada y lista no esta vacia, mirar si esta dentro de la lista --> true/false
 
-def SearchTerminal (bcn, name):
+def SearchTerminal (bcn, name): # mira si esta la aerolinea en alguna de las terminales, y si esta te dice cual
     for terminal in bcn.terminals:
         if IsAirlineInTerminal(terminal, name):
             return terminal.name
     return ""
 
-def AssignGate(bcn, aircraft):
+def AssignGate(bcn, aircraft):#te dice el nombre y especificaciones si estaba vacia y pasa a ocuparla, si estava ocupada no la puede ocupar
     terminal_name = SearchTerminal(bcn, aircraft.company)
 
-    if terminal_name == "":
-        return -1
-    SetSchengenAircrafts(aircraft)#llamamos a la funcion para poder determinar el tipo de avion
+    if terminal_name == "":# si no esta la aerolinea en ninguna terminal, esta vacia y si esta vacia, -1
+        return -1# no encontrado
+    SetSchengenAircrafts(aircraft)#llamamos a la funcion para poder determinar el tipo de avion schenguen o no
     if aircraft.schengen:
         flight_type = "Schengen"
     else:
@@ -136,9 +144,129 @@ def AssignGate(bcn, aircraft):
         if terminal.name == terminal_name:
             for area in terminal.boarding_areas:
                 if area.type == flight_type:
-                    for gate in area.gates:
+                    for gate in area.gates:# por cada puerta en el area de puertas
                         if not gate.occupied:
                             gate.occupied = True
                             gate.aircraft_id = aircraft.id
                             return gate.name
     return -1
+
+
+
+
+
+def PlotTerminal_visual(bcn, name):
+    # Busca la terminal por nombre
+    terminal = None
+    for t in bcn.terminals:
+        if t.name == name:
+            terminal = t
+    if not terminal:
+        return None
+
+    areas = terminal.boarding_areas
+    num_areas = len(areas)
+
+    # Dimensiones generales del canvas
+    fig_width = max(14, num_areas * 4.5)
+    fig, ax = plt.subplots(figsize=(fig_width, 7))  # Reducido un poco el alto para ajustarse a la proporción
+    ax.set_xlim(0, fig_width)
+    ax.set_ylim(0, 10)
+    ax.axis('off')
+
+    # Fondo blanco limpio como la imagen de referencia
+    ax.set_facecolor('white')
+    fig.patch.set_facecolor('white')
+
+    # Color azul corporativo de la imagen
+    azul_terminal = '#346182'
+
+    # Texto de la Terminal arriba a la izquierda (ej: "T1")
+    ax.text(0.5, 9.1, f"{name}", ha='left', va='center', fontsize=28, color='black')
+
+    # Barra superior de la terminal (el techo horizontal plano)
+    terminal_bar_y = 8.5
+    bar_height = 0.5
+    ax.add_patch(mpatches.Rectangle((0.5, terminal_bar_y), fig_width - 1.0, bar_height,
+                                    linewidth=0, facecolor=azul_terminal, zorder=3))
+
+    # Distribuye las boarding areas horizontalmente
+    area_spacing = (fig_width - 1.0) / num_areas
+    area_col_x = [0.5 + area_spacing * i + area_spacing / 2 for i in range(num_areas)]
+
+    trunk_width = 0.45  # Más grueso como en la foto
+    gate_w = 0.45  # Rectángulo de estado
+    gate_h = 0.25
+    gate_arm_len = 0.6  # Longitud del brazo horizontal azul
+    trunk_top_y = terminal_bar_y + 0.1  # Conexión perfecta con la barra superior
+    trunk_bot_y = 2.0
+
+    for idx, area in enumerate(areas):
+        cx = area_col_x[idx]  # Centro horizontal de esta boarding area
+
+        # Tronco vertical plano de la boarding area
+        ax.add_patch(mpatches.Rectangle(
+            (cx - trunk_width / 2, trunk_bot_y), trunk_width, trunk_top_y - trunk_bot_y,
+            linewidth=0, facecolor=azul_terminal, zorder=2))
+
+        # Etiqueta del nombre del area debajo del tronco (ej: "T1BAa")
+        ax.text(cx, trunk_bot_y - 0.4, f"T{name}BA{area.name}",
+                ha='center', va='top', fontsize=16, color='black')
+
+        # Distribuye los gates a lo largo del tronco
+        num_gates = len(area.gates)
+        if num_gates == 0:
+            continue
+
+        # Espacio disponible para los gates
+        usable_top = terminal_bar_y - 0.8
+        usable_bot = trunk_bot_y + 0.5
+        usable_h = usable_top - usable_bot
+
+        if num_gates == 1:
+            gate_ys = [(usable_top + usable_bot) / 2]
+        else:
+            step = usable_h / (num_gates - 1) if num_gates > 1 else 0
+            gate_ys = [usable_top - i * step for i in range(num_gates)]
+
+        # Alterna lado izquierdo / derecho para los gates
+        for gi, gate in enumerate(area.gates):
+            gy = gate_ys[gi]
+            side = 1 if gi % 2 == 0 else -1  # 1=derecha, -1=izquierda
+
+            # Brazo horizontal grueso desde el tronco
+            arm_x_start = cx + side * (trunk_width / 2)
+            arm_x_end = cx + side * (trunk_width / 2 + gate_arm_len)
+            ax.plot([arm_x_start, arm_x_end], [gy, gy],
+                    color=azul_terminal, linewidth=4, zorder=2)  # Más grueso
+
+            # Color plano sin bordes según ocupación
+            if gate.occupied:
+                gate_color = '#e74c3c'  # Rojo plano
+            else:
+                gate_color = '#5cb85c'  # Verde plano de la foto
+
+            # Rectángulo indicador de estado (separado un poquito del brazo)
+            gap = 0.05
+            rect_x = arm_x_end + gap if side == 1 else arm_x_end - gate_w - gap
+
+            rect = mpatches.Rectangle(
+                (rect_x, gy - gate_h / 2), gate_w, gate_h,
+                linewidth=0, facecolor=gate_color, zorder=3)
+            ax.add_patch(rect)
+
+            # Nombre de la puerta justo encima del brazo horizontal
+            label_x = arm_x_start + side * 0.1
+            ha_align = 'left' if side == 1 else 'right'
+            ax.text(label_x, gy + 0.1, gate.name, ha=ha_align, va='bottom',
+                    fontsize=9, color='black', fontweight='normal', zorder=4)
+
+            # Si está ocupado, el ID del avión (DALEN) se muestra en negro/gris al lado izquierdo del bloque rojo
+            if gate.occupied and gate.aircraft_id:
+                id_x = rect_x - 0.1 if side == 1 else rect_x - 0.1  # Ajustado a la izquierda del rectángulo rojo
+                ax.text(id_x, gy, gate.aircraft_id,
+                        ha='right', va='center', fontsize=11,
+                        color='black', zorder=4)
+
+    plt.tight_layout()
+    return fig

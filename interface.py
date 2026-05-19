@@ -1,7 +1,6 @@
-
 from tkinter import *
 from tkinter import filedialog, messagebox
-from aircraft import *
+from LEBL import *
 import os
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
@@ -10,7 +9,8 @@ import matplotlib.pyplot as plt
 llista_aeroports = []
 llista_vuelos = []
 
-current_canvas = None  # para controlar el gráfico al iniciar, = ninguno
+bcn = None
+current_canvas = None
 
 #para Airport.py--------------------------------------------------------------------------------------------------------
 def carregar_aeroports():
@@ -29,7 +29,7 @@ def generar_kml():
         MapAirports(llista_aeroports)
         messagebox.showinfo("Mapa", f"Fitxer {filename} generat correctament")
         try:
-            os.startfile(filename)  # abre el archivo automáticamente
+            os.startfile(filename)# abre el archivo automáticamente
         except Exception as e:
             messagebox.showerror("Error", f"No s'ha pogut obrir el fitxer: {e}")
     else:
@@ -57,7 +57,39 @@ def carregar_vuelos():
             SetSchengenAircrafts(a)
         messagebox.showinfo("Èxit", f"S'han carregat {len(llista_vuelos)} vols .")
 
+def carregar_estructura_lebl():
+    global bcn
+    nom_fitxer = filedialog.askopenfilename()
+    if nom_fitxer:
+        bcn = LoadAirportStructure(nom_fitxer)
+        if bcn == -1:
+            messagebox.showerror("Error", "Error carregant LEBL")
+        else:
+            messagebox.showinfo("Èxit", "LEBL carregat correctament")
 
+
+def assignar_vols_gates():
+    global bcn, llista_vuelos
+
+    # comprobar que todo esté cargado
+    if not bcn:
+        messagebox.showwarning("Atenció", "Primer has de carregar l'estructura LEBL.")
+        return
+
+    if not llista_vuelos:
+        messagebox.showwarning("Atenció", "Primer has de carregar els vols.")
+        return
+
+    assignats = 0
+    # asignar cada vuelo a un gate
+    for vuelo in llista_vuelos:
+        resultat = AssignGate(bcn, vuelo)
+
+        # si AssignGate devuelve algo válido
+        if resultat != -1:
+            assignats += 1
+
+    messagebox.showinfo("Assignació completada",f"S'han assignat {assignats} vols als gates.")
 # Parte de graficos  (EMBED)
 def mostrar_figura(fig):
     global current_canvas# que al inicio es none
@@ -83,6 +115,7 @@ def PlotArrivals_embedded():
 
 def PlotAirlines_embedded():
     global llista_vuelos, llista_aeroports
+
     if not llista_vuelos or not llista_aeroports:
         messagebox.showwarning("Atenció", "Primer has de carregar el fitxer de vols i aeroports.")
         return
@@ -97,7 +130,6 @@ def PlotAirlines_embedded():
 
     chart_area = Frame(graph_frame, bg="white")# el grafico
     chart_area.pack(side=RIGHT, expand=True, fill=BOTH)#posicion de donde estara el grafico
-
 
     try:
         # Aquí es donde extraemos cada companya de la lista de vuelos
@@ -126,16 +158,16 @@ def PlotAirlines_embedded():
 
     #es una función interna para el filtro y el grafico
     def aplicar_filtro():
-        indices = lat_bar.curselection()#guarda la posicion de la seleccion que escogamos en la barra
+        indices = lat_bar.curselection()  # guarda la posicion de la seleccion que escogamos en la barra
 
-        seleccionadas = [lat_bar.get(i) for i in indices]#coge la posicion de lo q hemos seleccionado y extrae y guarda lo que haya en esa posicon
+        seleccionadas = [lat_bar.get(i) for i in indices]  # coge la posicion de lo q hemos seleccionado y extrae y guarda lo que haya en esa posicon
 
         if not seleccionadas:
             messagebox.showwarning("Atenció", "Selecciona almenys una companyia.")
             return
 
         #filtramos la lista
-        vuelos_filtrados = [v for v in llista_vuelos if v.company in seleccionadas]#coge las compañias que esten en la lista de seleccionadas qye esten en la lista de vyelos y las guarda
+        vuelos_filtrados = [v for v in llista_vuelos if v.company in seleccionadas]  # coge las compañias que esten en la lista de seleccionadas qye esten en la lista de vyelos y las guarda
 
         # llamamos a la función que muestra la funciion
         fig = PlotAirlines(vuelos_filtrados)
@@ -150,9 +182,8 @@ def PlotAirlines_embedded():
         canvas.get_tk_widget().pack(fill=BOTH, expand=True)
 
     # botón para ejecutar el filtro
-    boton_filtro = Button(filtro, text="MOSTRAR GRÀFIC", command=aplicar_filtro, bg="#4CAF50", fg="white", font=("Arial", 10, "bold"), pady=10)
+    boton_filtro = Button(filtro, text="MOSTRAR GRÀFIC", command=aplicar_filtro, bg="#4CAF50", fg="white",font=("Arial", 10, "bold"), pady=10)
     boton_filtro.pack(fill=X, padx=10, pady=10)
-
 
     Label(chart_area, text="<-- Selecciona les companyies i clica el botó", font=("Arial", 12), bg="white").pack(expand=True)
 
@@ -161,6 +192,24 @@ def PlotFlightsType_embedded():
     fig = PlotFlightsType(llista_vuelos)
     mostrar_figura(fig)
 
+#para LEBL.py---------------------------------------------------------------------------------------------------
+def PlotTerminal(name):
+    global bcn
+
+    if not bcn:
+        messagebox.showwarning("Atenció", "Carrega LEBL primer")
+        return
+
+    # usa la funcion visual de LEBL.py que dibuja el mapa con boarding areas y gates
+    fig = PlotTerminal_visual(bcn, name)
+
+    if fig is None:
+        messagebox.showerror("Error", "Terminal no trobada")
+        return
+
+    mostrar_figura(fig)
+
+
 
 def clear_graph():
     for widget in graph_frame.winfo_children():
@@ -168,8 +217,7 @@ def clear_graph():
     Label(graph_frame, text="(Aquí aparecerán los gráficos)", font=("Arial", 14)).pack(expand=True)
 
 
-
-# interfaz grafica
+## interfaz grafica
 window = Tk()
 window.title("EETAC Dashboard")
 window.geometry("1600x1000")
@@ -178,11 +226,7 @@ window.rowconfigure(0, weight=1)
 window.columnconfigure(0, weight=1)  # panel  para botones, etc
 window.columnconfigure(1, weight=3)# zona de gráficos
 
-
-
-
 # zona donde esta el grafico (zona lateral)
-
 graph_frame = Frame(window, bg="white", relief="solid", bd=2)#relief soft significa q tendra borde delimitado
 graph_frame.grid(row=0, column=1, sticky="nsew")
 graph_frame.grid_propagate(False)# evita que se propague todo aquello que usando grid sea mayor
@@ -199,24 +243,36 @@ bottom_frame.rowconfigure(2, weight=1)
 
 
 
-# subtema de descargar archivos
-download_frame = LabelFrame(bottom_frame, text="Descarregar archius", padx=10, pady=10)
+#subtema de descargar archivos
+download_frame = LabelFrame(bottom_frame, text="Descarregar arxius", padx=10, pady=10)
 download_frame.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
 
-Button(download_frame, text="Carregar base d'aeroports", command=carregar_aeroports).pack(fill=X,pady = 4, ipady=16)
-Button(download_frame, text="Carregar vols diaris", command=carregar_vuelos).pack(fill=X,pady = 4, ipady=16)
-Button(download_frame, text="Localització Google Earth", command=generar_kml).pack(fill=X,pady = 4, ipady=16)
-Button(download_frame, text="Veure recorregut Google Earth", command=generar_mapa_vuelos).pack(fill=X, pady=4, ipady=5)
+Button(download_frame, text="Carregar base d'aeroports", command=carregar_aeroports).pack(fill=BOTH, expand=True, pady=4)
+Button(download_frame, text="Carregar vols diaris", command=carregar_vuelos).pack(fill=BOTH, expand=True, pady=4)
+Button(download_frame, text="Localització Google Earth", command=generar_kml).pack(fill=BOTH, expand=True, pady=4)
+Button(download_frame, text="Veure recorregut Google Earth", command=generar_mapa_vuelos).pack(fill=BOTH, expand=True, pady=4)
+
+
 
 # subtema de botones
+
 charts_frame = LabelFrame(bottom_frame, text="Botons", padx=10, pady=10)
 charts_frame.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
 
-Button(charts_frame, text="Veure Estadístiques", command=PlotAirports_embedded).pack(fill=X,pady = 4, ipady=16)
-Button(charts_frame, text="Mostrar Histograma Horari", command=PlotArrivals_embedded).pack(fill=X,pady = 4, ipady=16)
-Button(charts_frame, text="Gràfic per Aerolínia", command=PlotAirlines_embedded).pack(fill=X,pady = 4, ipady=16)
-Button(charts_frame, text="Vols procedents de països Schengen", command=PlotFlightsType_embedded).pack(fill=X,pady = 4, ipady=16)
-Button(charts_frame, text="Vuidar grafic", command=clear_graph).pack(fill=X,pady = 4, ipady=16)
+Button(charts_frame, text="Veure Estadístiques", command=PlotAirports_embedded).pack(fill=BOTH, expand=True, pady=4)
+Button(charts_frame, text="Mostrar Histograma Horari", command=PlotArrivals_embedded).pack(fill=BOTH, expand=True, pady=4)
+Button(charts_frame, text="Grafic per Aerolinia", command=PlotAirlines_embedded).pack(fill=BOTH, expand=True, pady=4)
+Button(charts_frame, text="Vols procedents de països Schengen", command=PlotFlightsType_embedded).pack(fill=BOTH, expand=True, pady=4)
+Button(charts_frame, text="Buidar grafic", command=clear_graph).pack(fill=BOTH, expand=True, pady=4)
+
+# subtema de gestio de portes
+lebl_frame = LabelFrame(bottom_frame, text="Portes LEBL", padx=10, pady=10)
+lebl_frame.grid(row=2, column=0, sticky="nsew", padx=5, pady=5)
+
+Button(lebl_frame, text="Carregar estructura LEBL", command=carregar_estructura_lebl).pack(fill=BOTH, expand=True, pady=4)
+Button(lebl_frame, text="Assignar vols a gates",command=assignar_vols_gates).pack(fill=BOTH, expand=True, pady=4)
+Button(lebl_frame, text="Terminal T1", command=lambda: PlotTerminal("T1")).pack(fill=BOTH, expand=True, pady=4)
+Button(lebl_frame, text="Terminal T2", command=lambda: PlotTerminal("T2")).pack(fill=BOTH, expand=True, pady=4)
 
 
 # SALIR
