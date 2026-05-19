@@ -224,7 +224,7 @@ window.geometry("1600x1000")
 
 window.rowconfigure(0, weight=1)
 window.columnconfigure(0, weight=1)  # panel  para botones, etc
-window.columnconfigure(1, weight=3)# zona de gráficos
+window.columnconfigure(1, weight=999)# zona de gráficos
 
 # zona donde esta el grafico (zona lateral)
 graph_frame = Frame(window, bg="white", relief="solid", bd=2)#relief soft significa q tendra borde delimitado
@@ -232,7 +232,7 @@ graph_frame.grid(row=0, column=1, sticky="nsew")
 graph_frame.grid_propagate(False)# evita que se propague todo aquello que usando grid sea mayor
 graph_frame.pack_propagate(False)# evita que se propague todo aquello que usando pack sea mayor
 
-# parte inferior
+# parte lateral izquierda
 bottom_frame = Frame(window)
 bottom_frame.grid(row=0, column=0, sticky="nsew")
 
@@ -244,7 +244,7 @@ bottom_frame.rowconfigure(2, weight=1)
 
 
 #subtema de descargar archivos
-download_frame = LabelFrame(bottom_frame, text="Descarregar arxius", padx=10, pady=10)
+download_frame = LabelFrame(bottom_frame, text="Descarregar arxius", padx=8, pady=8)
 download_frame.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
 
 Button(download_frame, text="Carregar base d'aeroports", command=carregar_aeroports).pack(fill=BOTH, expand=True, pady=4)
@@ -256,7 +256,7 @@ Button(download_frame, text="Veure recorregut Google Earth", command=generar_map
 
 # subtema de botones
 
-charts_frame = LabelFrame(bottom_frame, text="Botons", padx=10, pady=10)
+charts_frame = LabelFrame(bottom_frame, text="Botons", padx=8, pady=8)
 charts_frame.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
 
 Button(charts_frame, text="Veure Estadístiques", command=PlotAirports_embedded).pack(fill=BOTH, expand=True, pady=4)
@@ -266,7 +266,7 @@ Button(charts_frame, text="Vols procedents de països Schengen", command=PlotFli
 Button(charts_frame, text="Buidar grafic", command=clear_graph).pack(fill=BOTH, expand=True, pady=4)
 
 # subtema de gestio de portes
-lebl_frame = LabelFrame(bottom_frame, text="Portes LEBL", padx=10, pady=10)
+lebl_frame = LabelFrame(bottom_frame, text="Portes LEBL", padx=8, pady=8)
 lebl_frame.grid(row=2, column=0, sticky="nsew", padx=5, pady=5)
 
 Button(lebl_frame, text="Carregar estructura LEBL", command=carregar_estructura_lebl).pack(fill=BOTH, expand=True, pady=4)

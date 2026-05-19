@@ -182,11 +182,11 @@ def PlotTerminal_visual(bcn, name):
     azul_terminal = '#346182'
 
     # Texto de la Terminal arriba a la izquierda (ej: "T1")
-    ax.text(0.5, 9.1, f"{name}", ha='left', va='center', fontsize=28, color='black')
+    ax.text(fig_width/2, 8.5+1/2, f"Terminal: {name}", ha='center', va='center', fontsize=28, color='black', zorder=4)
 
     # Barra superior de la terminal (el techo horizontal plano)
     terminal_bar_y = 8.5
-    bar_height = 0.5
+    bar_height = 1
     ax.add_patch(mpatches.Rectangle((0.5, terminal_bar_y), fig_width - 1.0, bar_height,
                                     linewidth=0, facecolor=azul_terminal, zorder=3))
 
@@ -210,7 +210,7 @@ def PlotTerminal_visual(bcn, name):
             linewidth=0, facecolor=azul_terminal, zorder=2))
 
         # Etiqueta del nombre del area debajo del tronco (ej: "T1BAa")
-        ax.text(cx, trunk_bot_y - 0.4, f"T{name}BA{area.name}",
+        ax.text(cx, trunk_bot_y - 0.4, f"{name}BA{area.name}",
                 ha='center', va='top', fontsize=16, color='black')
 
         # Distribuye los gates a lo largo del tronco
@@ -247,7 +247,7 @@ def PlotTerminal_visual(bcn, name):
                 gate_color = '#5cb85c'  # Verde plano de la foto
 
             # Rectángulo indicador de estado (separado un poquito del brazo)
-            gap = 0.05
+            gap = 0.15# separacion del cubo con el brazo
             rect_x = arm_x_end + gap if side == 1 else arm_x_end - gate_w - gap
 
             rect = mpatches.Rectangle(
